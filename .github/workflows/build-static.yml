@@ -146,6 +146,18 @@ jobs:
         working-directory: spc
         run: php bin/spc doctor --auto-fix || true
 
+      - name: Verify the musl toolchain is in place
+        if: matrix.os == 'linux'
+        run: |
+          # doctor runs under `|| true` because it also reports fixes we do not
+          # need. A failed musl-wrapper download is therefore silent, and the
+          # build dies two steps later on a cmake configure that cannot find
+          # zig-cc — the log then blames libuv. Stop here and name the cause.
+          if [ ! -f "/lib/ld-musl-${{ matrix.arch }}.so.1" ]; then
+            echo "spc doctor did not install the musl wrapper; see its output above" >&2
+            exit 1
+          fi
+
       - name: Download sources
         working-directory: spc
         run: |
