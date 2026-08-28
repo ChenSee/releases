@@ -250,7 +250,7 @@ jobs:
   build-windows-static:
     name: "Static (windows-x86_64)"
     needs: config
-    runs-on: windows-2025-vs2026
+    runs-on: windows-2025
     env:
       PHP_BUILD_CACHE_BASE_DIR: C:\build-cache
       PHP_BUILD_OBJ_DIR: C:\obj

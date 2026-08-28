@@ -6,7 +6,7 @@ on:
 jobs:
   build-debug-dump:
     name: "Windows x64 Debug (php-src@true-async + php-async@main)"
-    runs-on: windows-2025-vs2026
+    runs-on: windows-2025
     timeout-minutes: 60
     env:
       PHP_BUILD_CACHE_BASE_DIR: C:\build-cache
