@@ -9,7 +9,7 @@ on:
       test_only:
         description: 'Test build only (no release, no artifacts saved)'
         required: false
-        default: true
+        default: false
         type: boolean
 
 permissions:
@@ -614,7 +614,7 @@ jobs:
           Get-ChildItem $stageDir | Format-Table Name, @{N='Size';E={'{0:N0}' -f $_.Length}}
 
       - name: Upload FrankenPHP artifact
-        if: ${{ !inputs.test_only }}
+        if: ${{ github.event_name == 'push' || inputs.test_only == false }}
         uses: actions/upload-artifact@v7
         with:
           name: windows-x64${{ matrix.artifact_suffix }}-frankenphp
@@ -785,7 +785,7 @@ jobs:
           echo "ARCHIVE=$archive" >> $env:GITHUB_ENV
 
       - name: Upload artifact
-        if: ${{ !inputs.test_only }}
+        if: ${{ github.event_name == 'push' || inputs.test_only == false }}
         uses: actions/upload-artifact@v7
         with:
           name: windows-x64${{ matrix.artifact_suffix }}
@@ -796,7 +796,7 @@ jobs:
   # Create GitHub Release with checksums
   # ---------------------------------------------------------------------------
   release:
-    if: ${{ !inputs.test_only }}
+    if: ${{ github.event_name == 'push' || inputs.test_only == false }}
     needs: [config, build-windows]
     runs-on: ubuntu-latest
     steps:
@@ -866,7 +866,7 @@ jobs:
   # Update website download page
   # ---------------------------------------------------------------------------
   update-website:
-    if: ${{ !inputs.test_only && needs.config.outputs.is_prerelease == 'false' }}
+    if: ${{ (github.event_name == 'push' || inputs.test_only == false) && needs.config.outputs.is_prerelease == 'false' }}
     needs: [config, release]
     runs-on: ubuntu-latest
     steps:
