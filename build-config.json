@@ -8,7 +8,7 @@
   "extensions": {
     "async": {
       "repo": "true-async/php-async",
-      "branch": "v0.9.7",
+      "branch": "v0.9.8",
       "path": "ext/async"
     },
     "server": {
