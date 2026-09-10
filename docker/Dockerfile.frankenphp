@@ -212,7 +212,7 @@ RUN echo 'Acquire::Retries "5"; Acquire::http::Timeout "30"; Acquire::https::Tim
     libxml2 libargon2-1 \
     libedit2 libreadline8 \
     libsodium23 libsqlite3-0 libonig5 libzip4 \
-    libpng16-16 libjpeg8 libwebp7 libfreetype6 \
+    libpng16-16 libjpeg8 libwebp7 libwebpdemux2 libwebpmux3 libfreetype6 \
     libgmp10 libpq5 libbz2-1.0 \
     libffi8 libxslt1.1 libicu74 \
     ca-certificates \

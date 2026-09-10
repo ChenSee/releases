@@ -17,7 +17,9 @@ ARG SERVER_BRANCH=main
 ARG PHPREDIS_REPO=https://github.com/true-async/phpredis.git
 ARG PHPREDIS_BRANCH=true-async
 ARG IGBINARY_REPO=https://github.com/igbinary/igbinary.git
-ARG IGBINARY_BRANCH=master
+# A commit, not a branch: PHP 8.6 support is on master and in none of the release tags, and an
+# unpinned master lets somebody else's commit decide whether this image builds.
+ARG IGBINARY_REF=2b1f5d62e3037b07c2a46499ac32091cdb41fb40
 ARG CLICKHOUSE_REPO=https://github.com/true-async/php-clickhouse.git
 ARG CLICKHOUSE_BRANCH=v0.1.0
 ARG DEBUG=false
@@ -96,14 +98,11 @@ RUN git clone --depth 1 --branch ${PHP_SRC_BRANCH} ${PHP_SRC_REPO} /usr/src/php-
     && git clone --depth 1 --branch ${SERVER_BRANCH} ${SERVER_REPO} /usr/src/server \
     && git clone --depth 1 --recurse-submodules --shallow-submodules \
            --branch ${PHPREDIS_BRANCH} ${PHPREDIS_REPO} /usr/src/phpredis \
-    && git clone --depth 1 --branch ${IGBINARY_BRANCH} ${IGBINARY_REPO} /usr/src/igbinary \
+    && git clone --filter=blob:none --no-checkout ${IGBINARY_REPO} /usr/src/igbinary \
+    && git -C /usr/src/igbinary -c advice.detachedHead=false checkout ${IGBINARY_REF} \
     && git clone --depth 1 --recurse-submodules --shallow-submodules \
            --branch ${CLICKHOUSE_BRANCH} ${CLICKHOUSE_REPO} /usr/src/clickhouse
 
-# igbinary still reads PG(unserialize_callback_func) as a C string; php-src
-# turned that global into a zend_string.
-COPY docker/patches/igbinary-unserialize-callback.patch /tmp/igbinary.patch
-RUN cd /usr/src/igbinary && patch -p1 < /tmp/igbinary.patch
 
 # Fix possible Windows line endings
 RUN dos2unix /usr/src/php-src/ext/async/config.m4
