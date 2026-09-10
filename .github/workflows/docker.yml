@@ -11,6 +11,11 @@ on:
         required: false
         default: true
         type: boolean
+      async_branch:
+        description: 'Override true-async/php-async ref (branch, tag or commit SHA). Empty = build-config.json'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -38,9 +43,15 @@ jobs:
 
       - name: Read build-config.json
         id: read
+        env:
+          ASYNC_BRANCH_INPUT: ${{ inputs.async_branch }}
         run: |
+          ASYNC_BRANCH="$ASYNC_BRANCH_INPUT"
+          if [ -z "$ASYNC_BRANCH" ]; then
+            ASYNC_BRANCH=$(jq -r '.extensions.async.branch' build-config.json)
+          fi
           echo "php_src_branch=$(jq -r '.php_src.branch' build-config.json)" >> "$GITHUB_OUTPUT"
-          echo "async_branch=$(jq -r '.extensions.async.branch' build-config.json)" >> "$GITHUB_OUTPUT"
+          echo "async_branch=$ASYNC_BRANCH" >> "$GITHUB_OUTPUT"
           echo "xdebug_branch=$(jq -r '.extensions.xdebug.branch' build-config.json)" >> "$GITHUB_OUTPUT"
           echo "frankenphp_branch=$(jq -r '.frankenphp.branch' build-config.json)" >> "$GITHUB_OUTPUT"
           echo "server_branch=$(jq -r '.extensions.server.branch' build-config.json)" >> "$GITHUB_OUTPUT"
