@@ -16,6 +16,16 @@ on:
         required: false
         default: ''
         type: string
+      php_src_branch:
+        description: 'Override true-async/php-src ref (branch, tag or commit SHA). Empty = build-config.json'
+        required: false
+        default: ''
+        type: string
+      skip_async_tests:
+        description: 'Report ext/async test failures without failing the build'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -51,13 +61,18 @@ jobs:
         id: read
         env:
           ASYNC_BRANCH_INPUT: ${{ inputs.async_branch }}
+          PHP_SRC_BRANCH_INPUT: ${{ inputs.php_src_branch }}
         run: |
           ASYNC_BRANCH="$ASYNC_BRANCH_INPUT"
           if [ -z "$ASYNC_BRANCH" ]; then
             ASYNC_BRANCH=$(jq -r '.extensions.async.branch' build-config.json)
           fi
+          PHP_SRC_BRANCH="$PHP_SRC_BRANCH_INPUT"
+          if [ -z "$PHP_SRC_BRANCH" ]; then
+            PHP_SRC_BRANCH=$(jq -r '.php_src.branch' build-config.json)
+          fi
           echo "php_src_repo=$(jq -r '.php_src.repo' build-config.json)" >> "$GITHUB_OUTPUT"
-          echo "php_src_branch=$(jq -r '.php_src.branch' build-config.json)" >> "$GITHUB_OUTPUT"
+          echo "php_src_branch=$PHP_SRC_BRANCH" >> "$GITHUB_OUTPUT"
           echo "async_repo=$(jq -r '.extensions.async.repo' build-config.json)" >> "$GITHUB_OUTPUT"
           echo "async_branch=$ASYNC_BRANCH" >> "$GITHUB_OUTPUT"
           echo "xdebug_repo=$(jq -r '.extensions.xdebug.repo' build-config.json)" >> "$GITHUB_OUTPUT"
@@ -228,6 +243,10 @@ jobs:
           if %errorlevel% neq 0 exit /b %errorlevel%
 
       - name: Run ext/async tests
+        # php-async main is developed against php-src true-async-stable; when it
+        # is built against an older php-src tag, tests that cover newer engine
+        # behaviour fail. Set skip_async_tests to report them without failing.
+        continue-on-error: ${{ inputs.skip_async_tests }}
         shell: cmd
         run: |
           set PHP_BIN=%PHP_BUILD_OBJ_DIR%\${{ matrix.output_dir }}\php.exe
@@ -235,8 +254,10 @@ jobs:
           REM Copy dependency DLLs next to php.exe so it can find them
           copy "%DEPS_DIR%\bin\*.dll" "%PHP_BUILD_OBJ_DIR%\${{ matrix.output_dir }}\"
 
+          echo php-src ref: ${{ needs.config.outputs.php_src_branch }}
+          echo async ref:  ${{ needs.config.outputs.async_branch }}
           echo Running ext/async tests...
-          "%PHP_BIN%" php-src\run-tests.php --show-diff -p "%PHP_BIN%" php-src\ext\async\tests\
+          "%PHP_BIN%" php-src\run-tests.php --show-diff --timeout 120 -p "%PHP_BIN%" php-src\ext\async\tests\
           if %errorlevel% neq 0 exit /b %errorlevel%
           echo All ext/async tests passed.
 

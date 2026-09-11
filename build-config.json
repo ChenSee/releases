@@ -3,7 +3,7 @@
   "php_is_latest": true,
   "php_src": {
     "repo": "true-async/php-src",
-    "branch": "php-8.6.0-trueasync-0.9.9"
+    "branch": "true-async-stable"
   },
   "extensions": {
     "async": {
