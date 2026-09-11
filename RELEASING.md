@@ -139,6 +139,25 @@ Trigger the workflows manually without publishing artifacts:
 
 Make sure both complete successfully before tagging.
 
+### 3. Override refs without committing
+
+All three workflows accept these `workflow_dispatch` inputs on top of `test_only`:
+
+| Input | Type | Effect |
+| --- | --- | --- |
+| `php_src_branch` | string | Overrides `php_src.branch` (branch, tag or commit SHA) |
+| `async_branch` | string | Overrides `extensions.async.branch` (branch, tag or commit SHA) |
+| `skip_async_tests` | boolean | `Build & Release` only: report ext/async test failures instead of failing the job |
+
+Leave a field empty to fall back to `build-config.json`.
+
+Keep `php-async` `main` paired with `php-src` `true-async-stable`: `main` is only
+CI-tested against that branch, and its newer tests cover engine changes
+(`ext/phar` entry reads, `ext/curl` async transfer results) that are missing from
+the `php-8.6.0-trueasync-*` tags. Building `main` against an older php-src tag
+compiles fine but the ext/async test suite fails on Windows, which aborts the
+whole release job.
+
 ---
 
 ## Pre-release
