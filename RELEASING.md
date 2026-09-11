@@ -148,8 +148,28 @@ All three workflows accept these `workflow_dispatch` inputs on top of `test_only
 | `php_src_branch` | string | Overrides `php_src.branch` (branch, tag or commit SHA) |
 | `async_branch` | string | Overrides `extensions.async.branch` (branch, tag or commit SHA) |
 | `skip_async_tests` | boolean | `Build & Release` only: report ext/async test failures instead of failing the job |
+| `docker_image` | string | `Build & Push Docker Images` only: image to push, e.g. `chensee/php-true-async`. Empty = repo variable `DOCKER_IMAGE`, else `trueasync/php-true-async` |
 
 Leave a field empty to fall back to `build-config.json`.
+
+### 4. Push Docker images to your own namespace
+
+`trueasync/php-true-async` is upstream's Docker Hub repository; pushing there
+requires write access to that organisation. For a personal image:
+
+1. Docker Hub → **Account Settings → Personal access tokens** → create a token
+   with **Read & Write**
+2. Repo **Settings → Secrets and variables → Actions → Secrets**:
+   `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
+3. Repo **Settings → Secrets and variables → Actions → Variables**:
+   `DOCKER_IMAGE` = `chensee/php-true-async` (or pass `docker_image` at dispatch)
+4. **Actions → Build & Push Docker Images → Run workflow** with
+   `test_only` **unchecked** — it defaults to `true`, which only builds and
+   verifies locally and pushes nothing
+
+A manual dispatch is not a release, so it gets no versioned tag: the debian
+variant lands as `:latest-php8.6` and `:latest`. Tag `v*` to also publish
+`:${VERSION}-php8.6`.
 
 Keep `php-async` `main` paired with `php-src` `true-async-stable`: `main` is only
 CI-tested against that branch, and its newer tests cover engine changes

@@ -21,6 +21,11 @@ on:
         required: false
         default: ''
         type: string
+      docker_image:
+        description: 'Docker Hub image to push, e.g. chensee/php-true-async. Empty = repo variable DOCKER_IMAGE, else trueasync/php-true-async'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -43,6 +48,7 @@ jobs:
       version: ${{ steps.read.outputs.version }}
       is_release: ${{ steps.read.outputs.is_release }}
       is_prerelease: ${{ steps.read.outputs.is_prerelease }}
+      image_name: ${{ steps.read.outputs.image_name }}
     steps:
       - uses: actions/checkout@v7
 
@@ -68,6 +74,14 @@ jobs:
           echo "phpredis_branch=$(jq -r '.extensions.phpredis.branch' build-config.json)" >> "$GITHUB_OUTPUT"
           echo "php_version=$(jq -r '.php_version' build-config.json)" >> "$GITHUB_OUTPUT"
           echo "php_is_latest=$(jq -r '.php_is_latest' build-config.json)" >> "$GITHUB_OUTPUT"
+          IMAGE_NAME="${{ inputs.docker_image }}"
+          if [ -z "$IMAGE_NAME" ]; then
+            IMAGE_NAME="${{ vars.DOCKER_IMAGE }}"
+          fi
+          if [ -z "$IMAGE_NAME" ]; then
+            IMAGE_NAME="trueasync/php-true-async"
+          fi
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
           VERSION="${GITHUB_REF_NAME#v}"
           if [[ "$VERSION" == "$GITHUB_REF_NAME" ]]; then
             VERSION="dev-$(date +%Y%m%d-%H%M%S)"
@@ -170,7 +184,7 @@ jobs:
             PHPREDIS_BRANCH=${{ needs.config.outputs.phpredis_branch }}
             DEBUG=${{ matrix.debug }}
           load: true
-          tags: trueasync/php-true-async:ci-test
+          tags: ${{ needs.config.outputs.image_name }}:ci-test
           cache-from: type=gha,scope=${{ matrix.variant }}-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.variant }}-${{ matrix.platform }}
 
@@ -178,10 +192,10 @@ jobs:
         if: ${{ inputs.test_only }}
         run: |
           if [[ "${{ matrix.variant }}" == "frankenphp" ]]; then
-            docker run --rm trueasync/php-true-async:ci-test frankenphp version
+            docker run --rm ${{ needs.config.outputs.image_name }}:ci-test frankenphp version
           else
-            docker run --rm trueasync/php-true-async:ci-test php -v
-            docker run --rm trueasync/php-true-async:ci-test php -m
+            docker run --rm ${{ needs.config.outputs.image_name }}:ci-test php -v
+            docker run --rm ${{ needs.config.outputs.image_name }}:ci-test php -m
           fi
 
       # push mode: build and push by digest only — tags are applied in the merge job
@@ -200,7 +214,7 @@ jobs:
             SERVER_BRANCH=${{ needs.config.outputs.server_branch }}
             PHPREDIS_BRANCH=${{ needs.config.outputs.phpredis_branch }}
             DEBUG=${{ matrix.debug }}
-          outputs: type=image,name=trueasync/php-true-async,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ needs.config.outputs.image_name }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.variant }}-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.variant }}-${{ matrix.platform }}
 
@@ -272,7 +286,7 @@ jobs:
           IS_RELEASE="${{ needs.config.outputs.is_release }}"
           IS_PRERELEASE="${{ needs.config.outputs.is_prerelease }}"
           PHP_IS_LATEST="${{ needs.config.outputs.php_is_latest }}"
-          IMAGE="trueasync/php-true-async"
+          IMAGE="${{ needs.config.outputs.image_name }}"
           VARIANT="${{ matrix.variant }}"
 
           TAGS=""
@@ -308,7 +322,7 @@ jobs:
 
       - name: Create and push manifest
         run: |
-          IMAGE="trueasync/php-true-async"
+          IMAGE="${{ needs.config.outputs.image_name }}"
           VARIANT="${{ matrix.variant }}"
 
           if [[ "${{ matrix.multiarch }}" == "true" ]]; then
