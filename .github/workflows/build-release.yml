@@ -257,9 +257,22 @@ jobs:
           echo php-src ref: ${{ needs.config.outputs.php_src_branch }}
           echo async ref:  ${{ needs.config.outputs.async_branch }}
           echo Running ext/async tests...
-          "%PHP_BIN%" php-src\run-tests.php --show-diff --timeout 120 -p "%PHP_BIN%" php-src\ext\async\tests\
+          "%PHP_BIN%" php-src\run-tests.php --show-diff --set-timeout 120 -p "%PHP_BIN%" php-src\ext\async\tests\
           if %errorlevel% neq 0 exit /b %errorlevel%
           echo All ext/async tests passed.
+
+      - name: Upload ext/async test failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: async-test-diff-${{ matrix.build_type }}
+          path: |
+            php-src/ext/async/tests/**/*.diff
+            php-src/ext/async/tests/**/*.out
+            php-src/ext/async/tests/**/*.exp
+            php-src/ext/async/tests/**/*.log
+            php-src/ext/async/tests/**/*.sh
+          if-no-files-found: ignore
 
       - name: Create xdebug build task script
         shell: pwsh
